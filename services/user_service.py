@@ -67,8 +67,18 @@ async def login_user(db: AsyncSession, email: str, password: str):
     if not verify_password(password, user.hashed_password):
         return None
     
-    user.last_login = utc_now();
+    user.last_login = utc_now()
     await db.commit()
+    return user
+
+async def load_user(db: AsyncSession, id: str):
+    """Return user data constantly to front end"""
+    check_user_exists = await db.execute(select(User).where(User.id == UUID(id))) # SELECT Email, ID, Firstname, Lastname FROM Users WHERE Id =: id casting string to UUID
+    user = check_user_exists.scalar_one_or_none()
     
-    
+    if not user:
+        return None
+     
+    user.last_login = utc_now()
+    await db.commit()
     return user

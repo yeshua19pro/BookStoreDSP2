@@ -12,6 +12,7 @@ class RegisterForm(BaseModel):
     name: str
     last_name: Optional[str] = None
     address: str
+    role: str = "user" # default role is user
 
 class AuthenticatedUser(BaseModel):
     id: str # this would be need to be casted in the future, this CAN'T BE HARDCODED AS UUID

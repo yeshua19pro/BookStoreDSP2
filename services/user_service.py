@@ -49,7 +49,8 @@ async def register_user(db: AsyncSession, registry_data: RegisterForm):
         last_name=registry_data.last_name,
         address=registry_data.address,
         creation_date = utc_now(),
-        last_login = utc_now() #propierties of the user table, are also key sensitive
+        last_login = utc_now(), #propierties of the user table, are also key sensitive
+        role = registry_data.role.strip().lower()
     )
     db.add(new_user)
     await db.commit()

@@ -21,8 +21,8 @@ class FilterBooks(BaseModel):
     author: Optional[str] = None
     book_type: Optional[str] = None
     price: Optional[float] = None
-    publication_date_start_date: Optional[datetime] = None
-    publication_date_end_date: Optional[datetime] = None
+    publication_date_start_date: Optional[str] = None
+    publication_date_end_date: Optional[str] = None
     page: int = 1
     limit: int = 10
     group_by: Optional[str] = None

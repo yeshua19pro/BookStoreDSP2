@@ -12,9 +12,10 @@ from sqlalchemy.future import select # Select for queries
 from typing import Optional # Similar to 'Option T' in rust
 from core.config import settings
 from db.models.models import Book # User table structure
-from models.catalog_service_models import FilterBooks, RegisterBook, LoginForm, TokenResponse # own fields for authenticated user
+from models.catalog_service_models import FilterBooks, RegisterBook, TokenResponse # own fields for authenticated user
 from uuid import UUID, uuid4 # UUID for tables ids
-from utils.time import utc_now
+from utils.time import utc_now, utc_return_time_cast
+from dateutil import parser
 import random
 
 # Context for hashing passwords
@@ -36,15 +37,28 @@ async def register_book(db: AsyncSession, registry_data: RegisterBook):
     
     if duplicate_check_result:
         return None # Book with this name already exists
+    
+    publication_date = registry_data.publication_date
+    if publication_date.tzinfo is not None:
+        publication_date = publication_date.replace(tzinfo=None)
+    
     new_book = Book(
         book_name = registry_data.book_name.strip().lower(),
         author = registry_data.author.strip(),
         book_type = registry_data.book_type.strip(),
         price = registry_data.price,
-        publication_date = registry_data.publication_date,
+        publication_date = publication_date,
         description = registry_data.description.strip() if registry_data.description else None,
         stock = registry_data.stock,
-        image = registry_data.image.strip()
+        image = registry_data.image.strip(),
+        book_metadata = { "book_name" : registry_data.book_name.strip().lower(),
+        "author" : registry_data.author.strip(),
+        "book_type" :registry_data.book_type.strip(),
+        "price" : registry_data.price,
+        "publication_date" : utc_return_time_cast(publication_date),
+        "description" : registry_data.description.strip() if registry_data.description else None,
+        "stock" : registry_data.stock,
+        "image" : registry_data.image.strip(), }
     )
     db.add(new_book)
     await db.commit()
@@ -57,10 +71,23 @@ async def filter_book(db: AsyncSession, filter_data: FilterBooks):
     author = filter_data.author
     book_type = filter_data.book_type
     price = filter_data.price
-    publication_date_start_date = filter_data.publication_date_start_date
-    publication_date_end_date = filter_data.publication_date_end_date
-    
+    publication_date_start_date = None
+    publication_date_end_date = None
     condicionals = []
+    
+    if filter_data.publication_date_start_date != "":
+        publication_date_start_date = parser.parse(filter_data.publication_date_start_date) 
+    
+    if filter_data.publication_date_end_date != "":
+        publication_date_end_date = parser.parse(filter_data.publication_date_end_date)
+        
+    if publication_date_start_date is not None:
+        if publication_date_start_date.tzinfo is not None:
+            publication_date_start_date = publication_date_start_date.replace(tzinfo=None)
+    
+    if publication_date_end_date is not None:    
+        if publication_date_end_date.tzinfo is not None:
+            publication_date_end_date = publication_date_end_date.replace(tzinfo=None)
     
     query = select(Book)
     if book_name:
@@ -124,7 +151,7 @@ async def filter_book(db: AsyncSession, filter_data: FilterBooks):
             "author": book.author,
             "book_type": book.book_type,
             "price": book.price,
-            "publication_date": book.publication_date,
+            "publication_date": utc_return_time_cast(book.publication_date),
             "description": book.description,
             "stock": book.stock,
             "image": book.image

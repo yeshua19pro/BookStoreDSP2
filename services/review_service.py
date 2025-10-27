@@ -35,11 +35,15 @@ def create_access_token(data: dict, expires_minutes: int = 60) -> str: # JWT cre
 
 
 async def validate_book_exists(book_id: str):
+    params = {
+        "x_internal_action_token": settings.INTERNAL_ACTION_TOKEN
+    }
     async with httpx.AsyncClient() as client:
-        response = await client.get(f"{settings.CATALOG_SERVICE_URL}/books/exists/{book_id}")
-    if response.status_code != 200:
-        return False
-    return True
+        response = await client.get(
+            f"{settings.CATALOG_SERVICE_URL}/catalog/book-exists/{book_id}",
+            params=params
+        )
+    return response.status_code == 200
 
 
 async def review_book(db: AsyncSession, review_data: ReviewData, book_id : UUID, user_id : UUID):

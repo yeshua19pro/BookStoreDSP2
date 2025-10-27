@@ -4,15 +4,15 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from core.config import settings
 from core.security import configure_security
-from routers import catalog_service_router
+from routers import review_service_router
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from core.limiter import limiter 
 
 app = FastAPI(
-    title="User Service",
-    description="Manages customer accounts, authentication, profiles, and access control.",
+    title="Review Service",
+    description="Manages reviews and rating metadata updating",
     version="1.0.0"
 )
 
@@ -32,7 +32,7 @@ app.add_middleware(SlowAPIMiddleware)
 configure_security(app)
 
 # Routers, all routers and empoints that are configured for this Microservice
-app.include_router(catalog_service_router.router)
+app.include_router(review_service_router.router)
 
 # Endpoints for health check and root, active status of the service
 @app.get("/", include_in_schema=False)

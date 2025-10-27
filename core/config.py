@@ -12,6 +12,8 @@ class Settings(BaseSettings): # this goes in the .env
     ENVIRONMENT: str = "development" # Environment type: development, QA, production
     LIMITER_RATE: str = "1000/minute" # Rate limit for requests
     LIMITER_RETRY_AFTER: int = 10 # Retry after seconds when rate limit is exceeded
+    RABBIT_MQ_URL : str = "amqp://h1Xi8bi0xAEbQwDJ:weGtajXFJu9TlOspLZhFMlZ0EXO3HNRE@shortline.proxy.rlwy.net:29535"
+    CATALOG_SERVICE_URL : str = "localhost:8000"
     
     @field_validator("CORS_ORIGINS", mode="plain")
     @classmethod

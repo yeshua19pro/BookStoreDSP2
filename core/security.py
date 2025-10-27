@@ -25,7 +25,7 @@ def validate_token (credentials: HTTPAuthorizationCredentials = Depends(security
     
 # internal token is used for internal service communication
 async def validate_internal_action_token(x_internal_action_token: str = Header(...)): # Petition that's in a header
-    expected_token = settings.JWT_SECRET_KEY # Expected token from settings
+    expected_token = settings.INTERNAL_ACTION_TOKEN # Expected token from settings
     if x_internal_action_token != expected_token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

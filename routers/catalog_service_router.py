@@ -1,9 +1,9 @@
 from fastapi import APIRouter, HTTPException, Depends, Request, status # Constructor for router, request for ip directions
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession # Engine for postgress async
-from models.catalog_service_models import (BookInfo, FilterBooks, RegisterBook) # Validation models for auth (Account creation, login, token response)       
+from models.catalog_service_models import RegisterBook,FilterBooks,BookInfo # Validation models for Books      
 from services.catalog_service import register_book, create_access_token, filter_book # Auxiliar functions for routers
-from core.security import validate_token 
+from core.security import validate_token, validate_internal_action_token
 from db.session import get_session # Get async session for bd
 from db.models.models import Book # Structure of the table
 from core.limiter import limiter
@@ -15,9 +15,10 @@ from utils.time import utc_now, utc_return_time_cast # Router functions for less
 
 router = APIRouter(prefix="/catalog", tags=["Catalogs"]) # All endpoints will start with /catalog and tagged as Catalogs
 
-@router.post("/register-book", status_code = status.HTTP_201_CREATED, include_in_schema=True) 
-@limiter.limit("2/minute")
-async def register_book_router (
+@router.post("/review/{book_id}", status_code = status.HTTP_201_CREATED, include_in_schema=True) 
+@limiter.limit("10/minute")
+async def register_review_router (
+    book_id: str,
     registry_data: RegisterBook, # Pseudo model for book registration form
     request: Request,
     token_data: dict = Depends(validate_token),
@@ -25,12 +26,7 @@ async def register_book_router (
     ):
     """Endpoint to register a new book."""
 
-    if not token_data.get("role") == "admin":
-        return JSONResponse(
-            status_code = status.HTTP_403_FORBIDDEN,
-            content={"detail":"You do not have permission to perform this action."}
-        )
-        
+ 
     book = await register_book(db, registry_data)
     
     if not book:
@@ -66,7 +62,39 @@ async def filter_book_router ( # Pseudo model for book validation
         'name': token_data.get('name'),
         'last_name': token_data.get('last_name') or None
     })
+    
     return JSONResponse(
         status_code = status.HTTP_200_OK,
         content={"access_token":token, "token_type":"bearer", "book_info": books} # based on the bookinfor model.
+    )
+    
+
+@router.get("/book-exists/{book_id}")
+@limiter.limit("20/minute")
+async def book_exists ( 
+    book_id: str,
+    request: Request,
+    x_internal_action_token : str ,
+    db: AsyncSession = Depends(get_session), # Async session for bd
+    ):
+    """Endpoint to check an book."""
+
+
+    x_internal_action_token = x_internal_action_token.replace("Bearer", "").strip()
+    
+    await validate_internal_action_token(x_internal_action_token)
+        
+    book_query = await db.execute(select(Book).where(Book.id == UUID(book_id)))
+    book = book_query.scalar_one_or_none()
+    
+    
+    if not book:
+        return JSONResponse(
+            status_code = 404,
+            content={"detail":"Book Not found."}
+        )
+
+    return JSONResponse(
+        status_code = 200,
+        content={"detail": "Book found"} 
     )

@@ -58,7 +58,9 @@ async def register_book(db: AsyncSession, registry_data: RegisterBook):
         "publication_date" : utc_return_time_cast(publication_date),
         "description" : registry_data.description.strip() if registry_data.description else None,
         "stock" : registry_data.stock,
-        "image" : registry_data.image.strip(), }
+        "image" : registry_data.image.strip(), 
+        "rating": 0,
+        "total_reviews": 0}
     )
     db.add(new_book)
     await db.commit()
